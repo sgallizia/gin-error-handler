@@ -1,3 +1,18 @@
+# gin-error-handler
+
+A middleware to handle errors in Gin web framework by mapping them to HTTP responses.
+
+## Quick Start
+
+### Installation
+
+```bash
+go get github.com/sgallizia/gin-error-handler
+```
+
+### Example
+
+```go
 package main
 
 import (
@@ -30,18 +45,12 @@ func main() {
 		context.JSON(500, gin.H{"error": "internal server error"})
 	})
 	opts.ErrorMappings([]ginErrorHandler.ErrorMapping{
-		{
-			FromErrors: []error{customError{}},
-			ToResponseFunc: func(c *gin.Context, err error) {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "internal application error"})
-			},
-		},
-		{
-			FromErrors: []error{stdError},
-			ToResponseFunc: func(c *gin.Context, err error) {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
-			},
-		},
+		ginErrorHandler.Map(stdError).ToResponse(func(context *gin.Context, err error) {
+			context.JSON(http.StatusBadRequest, gin.H{"error": "standard error occurred"})
+		}),
+		ginErrorHandler.Map(customError{}).ToResponse(func(context *gin.Context, err error) {
+			context.JSON(http.StatusTeapot, gin.H{"error": "custom error occurred"})
+		}),
 	})
 	errorHandlerMdl, err := ginErrorHandler.NewErrorHandler(opts)
 	if err != nil {
@@ -51,7 +60,7 @@ func main() {
 	engine.GET("/ping", func(c *gin.Context) {
 		_ = c.Error(customError{})
 	})
-	engine.GET("pong", func(c *gin.Context) {
+	engine.GET("/pong", func(c *gin.Context) {
 		_ = c.Error(stdError)
 	})
 	err = engine.Run()
@@ -59,3 +68,4 @@ func main() {
 		panic(err)
 	}
 }
+```

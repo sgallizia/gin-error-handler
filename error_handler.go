@@ -23,12 +23,12 @@ func (e *ErrorHandler) GetMiddleware() func(c *gin.Context) {
 		}
 	extFor:
 		for _, errorMapping := range e.errMap {
-			for _, errToMap := range errorMapping.FromErrors {
+			for _, errToMap := range errorMapping.fromErrors {
 				if errors.Is(lastErr.Err, errToMap) ||
 					// in this case we cannot use errors.Is, because validator.ValidationErrors does not implement it
 					(reflect.TypeOf(errToMap) == reflect.TypeOf(validator.ValidationErrors{}) &&
 						reflect.TypeOf(lastErr.Err) == reflect.TypeOf(errToMap)) {
-					errorMapping.ToResponseFunc(context, lastErr.Err)
+					errorMapping.toResponseFunc(context, lastErr.Err)
 					break extFor
 				}
 			}
@@ -54,19 +54,19 @@ func NewErrorHandler(opts Options) (*ErrorHandler, error) {
 }
 
 type ErrorMapping struct {
-	FromErrors     []error
-	ToResponseFunc func(ctx *gin.Context, err error)
+	fromErrors     []error
+	toResponseFunc func(ctx *gin.Context, err error)
 }
 
 // ToResponse sets the response function for the error mapping.
 func (r ErrorMapping) ToResponse(response func(ctx *gin.Context, err error)) ErrorMapping {
-	r.ToResponseFunc = response
+	r.toResponseFunc = response
 	return r
 }
 
 // Map creates a new ErrorMapping from the given errors.
 func Map(err ...error) *ErrorMapping {
 	return &ErrorMapping{
-		FromErrors: err,
+		fromErrors: err,
 	}
 }
